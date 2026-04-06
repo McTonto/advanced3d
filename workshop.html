@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced 3D Game Art — Workshop</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #242837;
+    --accent: #7c6af7;
+    --accent2: #f7956a;
+    --text: #e8eaf6;
+    --muted: #8b8fa8;
+    --good: #5dd4a4;
+    --warn: #f7c56a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* TOP BAR */
+  #topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+    border-bottom: 1px solid #2a2d3e;
+    padding: 0 24px;
+    height: 52px;
+    flex-shrink: 0;
+    z-index: 100;
+  }
+  #topbar h1 { font-size: 14px; font-weight: 600; color: var(--muted); letter-spacing: .05em; text-transform: uppercase; }
+  #slide-counter { font-size: 13px; color: var(--muted); }
+  #progress-bar { position: absolute; bottom: 0; left: 0; height: 2px; background: var(--accent); transition: width .3s; }
+
+  /* LAYOUT */
+  #layout { display: flex; flex: 1; overflow: hidden; }
+
+  /* SIDEBAR */
+  #sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid #2a2d3e;
+    overflow-y: auto;
+    padding: 12px 0;
+  }
+  #sidebar::-webkit-scrollbar { width: 4px; }
+  #sidebar::-webkit-scrollbar-thumb { background: #2a2d3e; border-radius: 2px; }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 16px;
+    cursor: pointer;
+    font-size: 12.5px;
+    color: var(--muted);
+    border-left: 3px solid transparent;
+    transition: all .15s;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--surface2); color: var(--accent); border-left-color: var(--accent); }
+  .nav-num { font-size: 11px; width: 18px; text-align: center; opacity: .6; }
+
+  /* MAIN CONTENT */
+  #content { flex: 1; overflow: hidden; position: relative; }
+  .slide {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    padding: 48px 64px;
+    display: none;
+    animation: fadeIn .2s ease;
+  }
+  .slide.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  .slide::-webkit-scrollbar { width: 5px; }
+  .slide::-webkit-scrollbar-thumb { background: #2a2d3e; border-radius: 3px; }
+
+  /* SLIDE CONTENT */
+  .slide-header { margin-bottom: 40px; }
+  .slide-num { font-size: 12px; color: var(--accent); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 8px; }
+  .slide-title { font-size: 42px; font-weight: 700; line-height: 1.1; }
+  .slide-subtitle { font-size: 16px; color: var(--muted); margin-top: 10px; }
+
+  .topic-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 32px; }
+  .topic-card {
+    background: var(--surface);
+    border: 1px solid #2a2d3e;
+    border-radius: 12px;
+    padding: 24px;
+    transition: border-color .2s;
+  }
+  .topic-card:hover { border-color: var(--accent); }
+  .topic-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .topic-card p { font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+  .topic-icon { font-size: 20px; }
+
+  .tip-box {
+    background: linear-gradient(135deg, #1e1a3a, #1a2030);
+    border: 1px solid #3a3260;
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin-top: 24px;
+    font-size: 13.5px;
+    color: #b8b4e8;
+    line-height: 1.6;
+  }
+  .tip-box strong { color: var(--accent); }
+
+  .warn-box {
+    background: linear-gradient(135deg, #2a1e10, #201818);
+    border: 1px solid #5a3a20;
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin-top: 16px;
+    font-size: 13.5px;
+    color: #d4b090;
+    line-height: 1.6;
+  }
+  .warn-box strong { color: var(--warn); }
+
+  .good-box {
+    background: linear-gradient(135deg, #0e2a20, #0a1e18);
+    border: 1px solid #1a5a40;
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin-top: 16px;
+    font-size: 13.5px;
+    color: #90d4b8;
+    line-height: 1.6;
+  }
+  .good-box strong { color: var(--good); }
+
+  .new-tag {
+    display: inline-block;
+    background: #f7956a22;
+    border: 1px solid #f7956a55;
+    color: var(--accent2);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 1px 7px;
+    border-radius: 4px;
+    vertical-align: middle;
+    margin-left: 6px;
+  }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 32px; }
+  .two-col-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-top: 32px; }
+  @media (max-width: 900px) { .two-col, .two-col-3 { grid-template-columns: 1fr; } }
+
+  .diagram { margin-top: 28px; display: flex; justify-content: center; }
+  svg text { font-family: 'Segoe UI', sans-serif; }
+
+  h2.section-label {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--accent2);
+    margin: 36px 0 16px;
+  }
+  ul.checklist { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  ul.checklist li { display: flex; gap: 12px; font-size: 14px; color: var(--muted); align-items: flex-start; }
+  ul.checklist li::before { content: '▸'; color: var(--accent); flex-shrink: 0; }
+  ul.checklist li strong { color: var(--text); }
+
+  .score-scale {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  .score-item {
+    background: var(--surface);
+    border: 1px solid #2a2d3e;
+    border-radius: 8px;
+    padding: 14px 18px;
+    flex: 1;
+    min-width: 140px;
+    text-align: center;
+  }
+  .score-num { font-size: 28px; font-weight: 700; color: var(--accent); }
+  .score-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* NAV BUTTONS */
+  #nav-btns {
+    position: fixed;
+    bottom: 28px;
+    right: 32px;
+    display: flex;
+    gap: 10px;
+    z-index: 200;
+  }
+  .nav-btn {
+    background: var(--surface2);
+    border: 1px solid #3a3d5e;
+    color: var(--text);
+    padding: 10px 22px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all .15s;
+  }
+  .nav-btn:hover { background: var(--accent); border-color: var(--accent); }
+  .nav-btn:disabled { opacity: .3; cursor: default; }
+  .nav-btn.primary { background: var(--accent); border-color: var(--accent); }
+
+  /* HOME SLIDE */
+  .hero {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 70vh;
+  }
+  .hero .big-title { font-size: 60px; font-weight: 800; line-height: 1.05; }
+  .hero .big-title span { color: var(--accent); }
+  .hero .desc { font-size: 18px; color: var(--muted); margin-top: 20px; max-width: 600px; line-height: 1.6; }
+  .topic-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 36px; }
+  .pill {
+    background: var(--surface);
+    border: 1px solid #2a2d3e;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .pill:hover { border-color: var(--accent); color: var(--accent); }
+
+  kbd {
+    background: var(--surface2);
+    border: 1px solid #3a3d5e;
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: monospace;
+  }
+  .key-hint { font-size: 12px; color: var(--muted); margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<div id="topbar" style="position:relative">
+  <h1>Advanced 3D Game Art — Workshop</h1>
+  <span id="slide-counter">1 / 16</span>
+  <div id="progress-bar"></div>
+</div>
+
+<div id="layout">
+  <nav id="sidebar"></nav>
+  <main id="content"></main>
+</div>
+
+<div id="nav-btns">
+  <button class="nav-btn" id="btn-prev" onclick="navigate(-1)">← Prev</button>
+  <button class="nav-btn primary" id="btn-next" onclick="navigate(1)">Next →</button>
+</div>
+
+<script>
+const slides = [
+
+  // 0 — HOME
+  {
+    nav: 'Overview',
+    icon: '🏠',
+    html: `
+    <div class="hero">
+      <div class="slide-num">Advanced 3D Game Art</div>
+      <div class="big-title">3D Artist<br><span>Self-Assessment</span><br>Workshop</div>
+      <p class="desc">Go through each skill area, discuss examples, and honestly rate yourself. This gives you a clear picture of where you stand and what to focus on next.</p>
+      <div class="topic-pills">
+        ${['Modelling','Sculpting','UV Unwrapping','Texturing (PBR)','Baking','Game Engine','Optimization','Presentation','Portfolio Quality','Design Thinking','Reference Analysis','Pipeline','Organization','Problem Solving','Self-Directed Learning'].map((t,i)=>`<div class="pill" onclick="goTo(${i+1})">${i+1}. ${t}</div>`).join('')}
+      </div>
+      <p class="key-hint" style="margin-top:28px">Navigate: <kbd>←</kbd> <kbd>→</kbd> arrow keys &nbsp;|&nbsp; Click any topic above to jump directly</p>
+    </div>`
+  },
+
+  // 1 — MODELLING
+  {
+    nav: 'Modelling',
+    icon: '📐',
+    html: `
+    <div class="slide-header">
+      <div class="slide-num">01 — Modelling</div>
+      <div class="slide-title">Modelling</div>
+      <div class="slide-subtitle">The foundation of every asset — what lives under the hood.</div>
+    </div>
+    <div class="topic-grid">
+      <div class="topic-card">
+        <h3><span class="topic-icon">🔲</span> Clean Topology & Edge Flow</h3>
+        <p>Use quads wherever possible. Edge loops should follow the logical form of the object. Avoid poles (5+ edges meeting) in areas that deform or catch light badly. Triangulate only on export — never work in tris.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">⚙️</span> Hard Surface Modelling</h3>
+        <p>Mechanical objects rely on controlled bevels, support loops, and clean boolean workflows. Know when to add geometry (for silhouette) and when to fake it (with normal maps). Boolean clean-up is a skill in itself.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">💡</span> Fixing Shading Issues</h3>
+        <p>Bad shading comes from bad normals. Fix it with: correct smoothing groups / auto-smooth, weighted normals modifier, or support loops to sharpen edges. Always view your mesh with a matcap before baking.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">📏</span> Scale & Proportions</h3>
+        <p>Work in real-world units from the start. A door is ~2.1 m tall, a human ~1.8 m. Scale issues cause problems in physics, baking cage size, and LOD transitions. Apply scale before export.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🧩</span> Modular & Kitbash Workflows <span class="new-tag">+</span></h3>
+        <p>Most game environments are built from modular pieces — walls, floors, trims — that snap together on a grid. Pivot points must be at snapping positions (corner, base centre). Kitbash sets are pre-made modules combined into new forms. This is how most game levels are built efficiently.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🔺</span> Low-Poly vs High-Poly Workflow <span class="new-tag">+</span></h3>
+        <p>High-poly = no polygon limit, used only for baking. Low-poly = the game mesh, must hit polycount budget. These are two separate meshes. The high-poly detail is transferred via normal map bake — the engine never sees the high-poly.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">📤</span> Triangulation on Export <span class="new-tag">+</span></h3>
+        <p>Engines triangulate all quads on import — but they may do it differently than your DCC tool. To control how your quads split (especially on bevels and concave faces), triangulate manually before export. Unexpected triangulation causes shading artifacts in-engine that look fine in Blender/Maya.</p>
+      </div>
+    </div>
+    <div class="diagram">
+      <svg width="560" height="160" viewBox="0 0 560 160">
+        <rect width="560" height="160" rx="12" fill="#1a1d27"/>
+        <text x="140" y="24" text-anchor="middle" fill="#5dd4a4" font-size="12" font-weight="600">GOOD — Quads, clean loops</text>
+        <g stroke="#5dd4a4" stroke-width="1.5" fill="none">
+          <rect x="40" y="36" width="200" height="100" rx="4"/>
+          <line x1="90" y1="36" x2="90" y2="136"/>
+          <line x1="140" y1="36" x2="140" y2="136"/>
+          <line x1="190" y1="36" x2="190" y2="136"/>
+          <line x1="40" y1="69" x2="240" y2="69"/>
+          <line x1="40" y1="103" x2="240" y2="103"/>
+        </g>
+        <text x="420" y="24" text-anchor="middle" fill="#f76a6a" font-size="12" font-weight="600">BAD — Triangles, n-gons</text>
+        <g stroke="#f76a6a" stroke-width="1.5" fill="none">
+          <rect x="320" y="36" width="200" height="100" rx="4"/>
+          <line x1="320" y1="36" x2="520" y2="136"/>
+          <line x1="370" y1="36" x2="520" y2="90"/>
+          <line x1="320" y1="90" x2="440" y2="136"/>
+          <line x1="420" y1="36" x2="370" y2="136"/>
+          <line x1="320" y1="60" x2="490" y2="60"/>
+        </g>
+        <text x="280" y="90" text-anchor="middle" fill="#3a3d5e" font-size="28" font-weight="700">vs</text>
+      </svg>
+    </div>
+    <div class="tip-box"><strong>Pivot point placement:</strong> Where you place the pivot affects everything in engine. A door's pivot = hinge edge. A crate's pivot = bottom centre. A modular wall = bottom-left corner for grid snapping. Set this before export — changing it after means reimporting everything.</div>
+    <div class="warn-box"><strong>Common mistake:</strong> Adding edge loops for detail that should be in the normal map. Keep the low-poly lean — only add geometry that changes the silhouette or is visible at the intended camera distance.</div>`
+  },
+
+  // 2 — SCULPTING
+  {
+    nav: 'Sculpting',
+    icon: '🗿',
+    html: `
+    <div class="slide-header">
+      <div class="slide-num">02 — Sculpting</div>
+      <div class="slide-title">Sculpting</div>
+      <div class="slide-subtitle">From clay to game-ready detail — working in three layers of form.</div>
+    </div>
+    <div class="two-col-3">
+      <div class="topic-card">
+        <h3><span class="topic-icon">🔵</span> Primary Forms</h3>
+        <p>The big silhouette read. Block-in the major masses first. If the primary form isn't right, no amount of detail will save it. Work at low subdivision or with DynaMesh — focus on overall shape and proportions.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🟡</span> Secondary Forms</h3>
+        <p>Mid-level forms that break up the primary shape — muscle groups, panel placements, major surface variations. These give the form its character and realism.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🟢</span> Tertiary Forms</h3>
+        <p>Fine surface detail — pores, scratches, micro-roughness. Only add these last. Most tertiary detail comes from alphas, stamps, or tileable textures overlaid in Substance — not from sculpting every pore by hand.</p>
+      </div>
+    </div>
+    <div class="diagram">
+      <svg width="560" height="130" viewBox="0 0 560 130">
+        <rect width="560" height="130" rx="12" fill="#1a1d27"/>
+        <polygon points="280,15 80,115 480,115" fill="none" stroke="#2a2d3e" stroke-width="1.5"/>
+        <polygon points="280,15 200,65 360,65" fill="#7c6af720"/>
+        <text x="280" y="50" text-anchor="middle" fill="#7c6af7" font-size="11" font-weight="600">PRIMARY</text>
+        <polygon points="200,65 360,65 410,115 150,115" fill="#f7956a15"/>
+        <text x="280" y="95" text-anchor="middle" fill="#f7956a" font-size="11" font-weight="600">SECONDARY</text>
+        <text x="490" y="120" text-anchor="start" fill="#5dd4a4" font-size="11" font-weight="600">TERTIARY</text>
+        <line x1="480" y1="115" x2="488" y2="118" stroke="#5dd4a4" stroke-width="1"/>
+        <text x="20" y="28" fill="#8b8fa8" font-size="11">Build from top down.</text>
+        <text x="20" y="44" fill="#8b8fa8" font-size="11">Most artists jump to</text>
+        <text x="20" y="60" fill="#8b8fa8" font-size="11">detail too early.</text>
+      </svg>
+    </div>
+    <h2 class="section-label">Tools & Workflow</h2>
+    <div class="topic-grid">
+      <div class="topic-card">
+        <h3><span class="topic-icon">🌀</span> DynaMesh / SculptrisPro <span class="new-tag">+</span></h3>
+        <p>DynaMesh (ZBrush) and SculptrisPro (Blender) constantly remesh as you sculpt — you never run out of polygons in a specific area. Use these in the blocking stage so you can freely push and pull mass without topology constraints. Switch to SubDiv levels once the primary form is locked.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">📐</span> Subdivision Level Workflow <span class="new-tag">+</span></h3>
+        <p>Never push detail down to a lower subdivision. Work at the lowest level that still has enough resolution for what you're doing. Lower levels = primary forms. Mid levels = secondary. Highest levels = fine tertiary. Going back and reshaping a low SubDiv level after adding high-level detail destroys your work.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🖌️</span> Alpha & Stamp Brushes <span class="new-tag">+</span></h3>
+        <p>Alphas are greyscale images used as brush shapes — scratches, bolt patterns, cloth weave, skin pores. Stamps apply the alpha in a single click; drag-dot tiles it. This is how pros add tertiary detail fast without sculpting each scratch by hand. Source alphas from Substance, ArtStation Marketplace, or create your own in Photoshop.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">⚔️</span> ZBrush vs Blender Sculpting <span class="new-tag">+</span></h3>
+        <p>ZBrush: industry standard for organic sculpting, handles hundreds of millions of polygons, best alpha/brush library, more complex UI. Blender: free, integrates directly with modelling/retopo/UV workflow, improving rapidly. Many pros use ZBrush for sculpting and Blender for everything else. Know at least one well.</p>
+      </div>
+    </div>
+    <h2 class="section-label">Preparing for Game Pipeline</h2>
+    <ul class="checklist">
+      <li><strong>Retopology</strong> — Create a clean low-poly cage. Tools: RetopoFlow (Blender), ZRemesher (ZBrush), Maya Quad Draw.</li>
+      <li><strong>Decimation vs. retopo</strong> — Decimated meshes are fine as the high-poly for baking, but never use them as your final game mesh.</li>
+      <li><strong>Sculpt resolution</strong> — Enough geometry that the baked normal map captures all tertiary detail. Typically 5–8 million polys for a hero prop.</li>
+      <li><strong>Symmetry clean-up</strong> — Apply symmetry before the final detail pass. Ensure the merge at the centre line is clean.</li>
+    </ul>
+    <div class="good-box"><strong>Workflow:</strong> Block with DynaMesh → Lock primary form → Switch to SubDiv → Add secondary → Add tertiary with alphas → Decimate for baking high-poly → Retopo for game low-poly.</div>`
+  },
+
+  // 3 — UV UNWRAPPING
+  {
+    nav: 'UV Unwrapping',
+    icon: '📦',
+    html: `
+    <div class="slide-header">
+      <div class="slide-num">03 — UV Unwrapping</div>
+      <div class="slide-title">UV Unwrapping</div>
+      <div class="slide-subtitle">How your 3D surface maps to 2D texture space.</div>
+    </div>
+    <div class="topic-grid">
+      <div class="topic-card">
+        <h3><span class="topic-icon">✂️</span> Clean UV Layouts</h3>
+        <p>Seams should be hidden on hard edges, inside creases, or under surfaces never seen by camera. Avoid stretching — use a checker texture to verify. Keep islands axis-aligned where possible to prevent texture blurring from interpolation.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🔬</span> Texel Density</h3>
+        <p>All islands on an asset should have the same texel density (pixels per meter). Hero props get more texture space than background props. Consistency prevents blurry-vs-sharp patches on the same object.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">📐</span> Efficient Packing</h3>
+        <p>Fill as much UV space as possible — aim for 85–95% coverage. Use auto-packers (UV Packmaster, RizomUV). Leave at least 2–4 px padding between islands at 2K to prevent mipmap bleeding.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">💡</span> Intentional UV Mirroring <span class="new-tag">+</span></h3>
+        <p>Symmetrical objects can share UV space — mirror one side's UVs directly on top of the other. This effectively doubles your texel density at no cost. The trade-off: you can't paint asymmetric detail (dirt, wear on one side only). Decide per-asset whether mirroring is appropriate.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🗺️</span> UV Channel 2 — Lightmaps <span class="new-tag">+</span></h3>
+        <p>Unreal Engine's static lighting requires a second UV channel with no overlapping islands and more padding (usually 4–8 px at 2K). Channel 1 = unique texture UVs (can mirror, can be packed tight). Channel 2 = lightmap UVs (no overlaps, ever). This is a separate unwrap on the same mesh. Unreal can auto-generate it but manual is almost always better.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">📦</span> UDIM Workflow <span class="new-tag">+</span></h3>
+        <p>UDIM extends UV space across multiple 0–1 tiles (1001, 1002…), each holding a full texture set. Standard in film and high-end game pipelines for character assets needing very high texel density. Supported in Substance Painter, ZBrush, and modern engines. Not needed for most game props — know it exists and when it's appropriate.</p>
+      </div>
+    </div>
+    <div class="diagram">
+      <svg width="560" height="200" viewBox="0 0 560 200">
+        <rect width="560" height="200" rx="12" fill="#1a1d27"/>
+        <rect x="30" y="20" width="160" height="160" fill="none" stroke="#2a2d3e" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="110" y="14" text-anchor="middle" fill="#f76a6a" font-size="11">BAD — wasted space, stretched</text>
+        <rect x="40" y="30" width="60" height="40" fill="#f76a6a22" stroke="#f76a6a" stroke-width="1" rx="2"/>
+        <rect x="110" y="100" width="30" height="60" fill="#f76a6a22" stroke="#f76a6a" stroke-width="1" rx="2"/>
+        <rect x="50" y="110" width="45" height="20" fill="#f76a6a22" stroke="#f76a6a" stroke-width="1" rx="2" transform="rotate(23,72,120)"/>
+        <text x="110" y="196" text-anchor="middle" fill="#f76a6a" font-size="10">rotated, gaps, stretched</text>
+        <text x="390" y="14" text-anchor="middle" fill="#5dd4a4" font-size="11">GOOD — packed, consistent density</text>
+        <rect x="310" y="20" width="160" height="160" fill="none" stroke="#2a2d3e" stroke-width="1" stroke-dasharray="4,3"/>
+        <rect x="312" y="22" width="78" height="56" fill="#5dd4a422" stroke="#5dd4a4" stroke-width="1" rx="2"/>
+        <rect x="392" y="22" width="76" height="56" fill="#5dd4a422" stroke="#5dd4a4" stroke-width="1" rx="2"/>
+        <rect x="312" y="80" width="78" height="46" fill="#5dd4a422" stroke="#5dd4a4" stroke-width="1" rx="2"/>
+        <rect x="392" y="80" width="76" height="46" fill="#5dd4a422" stroke="#5dd4a4" stroke-width="1" rx="2"/>
+        <rect x="312" y="128" width="156" height="50" fill="#5dd4a422" stroke="#5dd4a4" stroke-width="1" rx="2"/>
+        <text x="390" y="196" text-anchor="middle" fill="#5dd4a4" font-size="10">axis-aligned, packed ~92%</text>
+        <text x="280" y="110" text-anchor="middle" fill="#3a3d5e" font-size="24" font-weight="700">vs</text>
+      </svg>
+    </div>
+    <div class="tip-box"><strong>Industry rule:</strong> On a 2K texture, leave 4 px padding between islands. On a 4K texture, 8 px. This prevents texture bleeding when mipmaps kick in at a distance.</div>
+    <div class="warn-box"><strong>Don't accidentally overlap:</strong> Overlapping UVs on a unique mesh makes baking impossible. Only overlap UVs intentionally (mirroring) and be aware of the trade-offs.</div>`
+  },
+
+  // 4 — TEXTURING PBR
+  {
+    nav: 'Texturing (PBR)',
+    icon: '🎨',
+    html: `
+    <div class="slide-header">
+      <div class="slide-num">04 — Texturing (PBR)</div>
+      <div class="slide-title">Texturing (PBR)</div>
+      <div class="slide-subtitle">Physically Based Rendering — making materials behave like real world surfaces.</div>
+    </div>
+    <h2 class="section-label">Core PBR Maps</h2>
+    <div class="topic-grid">
+      <div class="topic-card">
+        <h3><span class="topic-icon">🟤</span> Albedo / Base Color</h3>
+        <p>Raw surface color with no lighting baked in. Avoid very dark (&lt;30) or pure white (&gt;240) values. Metals have coloured albedo; non-metals are grey to coloured. Never bake lighting into the albedo map.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">⚫</span> Metallic</h3>
+        <p>Binary in most workflows — 0 (non-metal) or 1 (metal). Transitions only on oxidized or mixed surfaces. Don't use 0.5 as a general value; it breaks physically.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">⚪</span> Roughness</h3>
+        <p>Controls how blurry reflections are. 0 = mirror, 1 = fully matte. The most expressive channel — use variation to tell the story of the surface (worn areas rougher, polished areas smoother).</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🔵</span> Normal Map</h3>
+        <p>Baked from high-poly or hand-painted. Encodes surface direction. Dominant colour = 128,128,255 (flat blue). OpenGL vs DirectX: Y channel is flipped — know which your engine uses.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🌋</span> Height / Displacement <span class="new-tag">+</span></h3>
+        <p>Greyscale map — white = raised, black = recessed. Used two ways: (1) tessellation in engine for actual geometry displacement, (2) parallax occlusion mapping for cheaper fake depth (grout lines, worn surfaces). In Substance, height drives cavity shading and mask generators.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">✨</span> Emissive <span class="new-tag">+</span></h3>
+        <p>Adds light emission from the surface — screens, LEDs, lava, neon signs. Emissive values can exceed 1.0 (HDR) to actually bloom in post-processing. Don't fake emissive with bright albedo — it won't bloom or illuminate surroundings.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🍃</span> Opacity / Alpha <span class="new-tag">+</span></h3>
+        <p>Three modes: Opaque (no alpha), Masked (hard cutout — foliage, fences, hair cards), Translucent (soft blend — glass, smoke). Masked is cheapest. Translucent is expensive — avoid on many overlapping surfaces. Alpha source is usually a separate greyscale channel or the albedo alpha.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">💎</span> Specular Workflow <span class="new-tag">+</span></h3>
+        <p>Older Specular/Glossiness workflow (used in some studios and legacy engines): Diffuse map (= albedo), Specular map (reflection colour + intensity), Glossiness (= inverse roughness). Still found in Unity's Legacy shaders and some older pipelines. Know the difference — a Metallic-Roughness PBR asset imported into a Spec/Gloss shader looks completely wrong.</p>
+      </div>
+    </div>
+    <h2 class="section-label">Trim Sheets <span class="new-tag">+</span></h2>
+    <div class="topic-card" style="margin-top:0">
+      <h3><span class="topic-icon">📋</span> What is a Trim Sheet?</h3>
+      <p style="margin-bottom:12px">A trim sheet is a single tileable texture atlas containing many different surface trims — edges, panels, pipes, concrete bands, metal strips — all on one 2K or 4K texture. Every asset in a scene (walls, floors, props) maps its UVs to sections of the same trim sheet. This means the entire level shares one draw call for that material.</p>
+      <p><strong style="color:var(--good)">Why it matters:</strong> This is how AAA game environments are built. One trim sheet can texture an entire level. The trade-off is that UV unwrapping becomes about mapping to the right strip rather than unique unwrapping. Used heavily in FPS environments (Call of Duty, Titanfall, The Last of Us).</p>
+    </div>
+    <div class="diagram">
+      <svg width="560" height="120" viewBox="0 0 560 120">
+        <rect width="560" height="120" rx="12" fill="#1a1d27"/>
+        <text x="280" y="18" text-anchor="middle" fill="#8b8fa8" font-size="11">Trim Sheet — one texture, many surfaces</text>
+        <!-- Trim sheet representation -->
+        <rect x="30" y="28" width="180" height="80" rx="4" fill="#1e2030" stroke="#2a2d3e" stroke-width="1"/>
+        <!-- Horizontal trim strips -->
+        <rect x="32" y="30" width="176" height="14" fill="#7c6af730" stroke="#7c6af740" stroke-width="1"/>
+        <text x="120" y="40" text-anchor="middle" fill="#7c6af7" font-size="9">concrete edge trim</text>
+        <rect x="32" y="46" width="176" height="14" fill="#f7956a20" stroke="#f7956a40" stroke-width="1"/>
+        <text x="120" y="56" text-anchor="middle" fill="#f7956a" font-size="9">metal panel strip</text>
+        <rect x="32" y="62" width="176" height="14" fill="#5dd4a420" stroke="#5dd4a440" stroke-width="1"/>
+        <text x="120" y="72" text-anchor="middle" fill="#5dd4a4" font-size="9">pipe / cable tray</text>
+        <rect x="32" y="78" width="176" height="14" fill="#f7c56a20" stroke="#f7c56a40" stroke-width="1"/>
+        <text x="120" y="88" text-anchor="middle" fill="#f7c56a" font-size="9">floor grate strip</text>
+        <rect x="32" y="94" width="176" height="12" fill="#b890f020" stroke="#b890f040" stroke-width="1"/>
+        <text x="120" y="103" text-anchor="middle" fill="#b890f0" font-size="9">worn plaster edge</text>
+        <!-- Arrow -->
+        <text x="225" y="70" text-anchor="middle" fill="#3a3d5e" font-size="20">→</text>
+        <!-- Wall using trim -->
+        <rect x="250" y="28" width="60" height="80" fill="#1e2030" stroke="#7c6af740" stroke-width="1"/>
+        <rect x="250" y="28" width="60" height="14" fill="#7c6af730"/>
+        <rect x="250" y="94" width="60" height="14" fill="#7c6af730"/>
+        <text x="280" y="70" text-anchor="middle" fill="#8b8fa8" font-size="9">wall uses</text>
+        <text x="280" y="82" text-anchor="middle" fill="#8b8fa8" font-size="9">trim top+bot</text>
+        <!-- Pillar -->
+        <rect x="325" y="38" width="30" height="70" fill="#1e2030" stroke="#f7956a40" stroke-width="1"/>
+        <rect x="325" y="38" width="30" height="14" fill="#f7956a20"/>
+        <rect x="325" y="94" width="30" height="14" fill="#f7956a20"/>
+        <text x="340" y="78" text-anchor="middle" fill="#8b8fa8" font-size="9">pillar</text>
+        <!-- Floor -->
+        <rect x="370" y="85" width="80" height="23" fill="#1e2030" stroke="#5dd4a440" stroke-width="1"/>
+        <rect x="370" y="85" width="80" height="10" fill="#5dd4a420"/>
+        <text x="410" y="108" text-anchor="middle" fill="#8b8fa8" font-size="9">floor edge</text>
+        <!-- All share label -->
+        <text x="455" y="50" text-anchor="middle" fill="#5dd4a4" font-size="10" font-weight="600">All share</text>
+        <text x="455" y="63" text-anchor="middle" fill="#5dd4a4" font-size="10" font-weight="600">1 texture</text>
+        <text x="455" y="76" text-anchor="middle" fill="#5dd4a4" font-size="10" font-weight="600">= 1 draw call</text>
+      </svg>
+    </div>
+    <h2 class="section-label">Surface Storytelling</h2>
+    <ul class="checklist">
+      <li><strong>Material definition first</strong> — Decide what the surface IS before adding wear. Each material has a specific roughness range and albedo value range.</li>
+      <li><strong>Wear logic</strong> — Paint chips on edges and high-contact areas. Rust bleeds down from chips. Dirt accumulates in crevices (low AO), not on peaks.</li>
+      <li><strong>Avoiding noise</strong> — Noise ≠ detail. Step back from the screen — if you can see every brush stroke at thumbnail size, it's too noisy.</li>
+      <li><strong>Value contrast</strong> — Roughness variation carries most of the visual interest. Keep albedo values in a narrow range; let roughness do the heavy lifting.</li>
+    </ul>
+    <div class="tip-box"><strong>Substance Painter workflow:</strong> Set up your project with all baked maps first (AO, curvature, position, world-space normals). These drive smart masks and generators. Without them you're working blind.</div>`
+  },
+
+  // 5 — BAKING
+  {
+    nav: 'Baking',
+    icon: '🔥',
+    html: `
+    <div class="slide-header">
+      <div class="slide-num">05 — Baking</div>
+      <div class="slide-title">Baking</div>
+      <div class="slide-subtitle">Transferring high-poly detail onto low-poly maps.</div>
+    </div>
+    <div class="topic-grid">
+      <div class="topic-card">
+        <h3><span class="topic-icon">✅</span> Clean Normal Bakes</h3>
+        <p>Biggest factors: correct cage/ray distance, matching naming convention (HIGH_/LOW_ suffix), and proper smoothing groups. Harden edges on UV seams, smooth everything else before baking.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🔧</span> Fixing Errors</h3>
+        <p>Seam artifacts: harden UV-seam edges. Skewing: check ray distance is not too large. Dark blotches: check for inverted normals on the high-poly. Gradient smearing: use exploded bake.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🗺️</span> Understanding Maps</h3>
+        <p>Normal, AO, Curvature, Thickness, Position, World-Space Normal — each feeds different generators in Substance. Know what each one does before using it.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">💥</span> Exploded Bakes <span class="new-tag">+</span></h3>
+        <p>When parts of the high-poly overlap or are very close together, rays from the low-poly hit the wrong surface and produce incorrect bakes. Solution: move the mesh parts far apart in the DCC (in a separate "exploded" scene), bake, then move them back. The UVs stay the same — only world position changes for the bake. Essential for complex mechanical props.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🪄</span> Floating Geometry <span class="new-tag">+</span></h3>
+        <p>Small high-poly pieces that "float" just above the low-poly surface without being connected. Bolts, rivets, panel lines — modelled on the high-poly but not present on the low-poly at all. They bake into the normal map perfectly, contributing zero polygons to the final game mesh. One of the most powerful techniques for adding density to a low-poly.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🧲</span> Cage vs Ray Distance <span class="new-tag">+</span></h3>
+        <p>Two methods to control bake projection: (1) <strong>Cage mesh</strong> — a slightly inflated copy of the low-poly that defines exactly where rays are cast. Most accurate, fully controllable per-polygon. (2) <strong>Ray distance / max frontal/rear</strong> (Marmoset, Substance) — simpler, a single distance value. Cage = more work but fewer artifacts on complex shapes. Ray distance = faster for simple props.</p>
+      </div>
+    </div>
+    <div class="diagram">
+      <svg width="560" height="90" viewBox="0 0 560 90">
+        <rect width="560" height="90" rx="12" fill="#1a1d27"/>
+        <g font-size="10" text-anchor="middle">
+          <rect x="15" y="22" width="75" height="46" rx="6" fill="#7c6af720" stroke="#7c6af7" stroke-width="1.2"/>
+          <text x="52" y="42" fill="#7c6af7" font-weight="600">High-Poly</text>
+          <text x="52" y="57" fill="#8b8fa8">sculpt</text>
+          <line x1="92" y1="45" x2="108" y2="45" stroke="#2a2d3e" stroke-width="1.5"/>
+          <rect x="110" y="22" width="75" height="46" rx="6" fill="#f7956a20" stroke="#f7956a" stroke-width="1.2"/>
+          <text x="147" y="42" fill="#f7956a" font-weight="600">Baker</text>
+          <text x="147" y="57" fill="#8b8fa8">Marmoset/SP</text>
+          <line x1="187" y1="45" x2="203" y2="45" stroke="#2a2d3e" stroke-width="1.5"/>
+          <text x="195" y="38" fill="#8b8fa8" font-size="9">low-poly</text>
+          <rect x="205" y="22" width="75" height="46" rx="6" fill="#5dd4a420" stroke="#5dd4a4" stroke-width="1.2"/>
+          <text x="242" y="42" fill="#5dd4a4" font-weight="600">Maps</text>
+          <text x="242" y="57" fill="#8b8fa8">N, AO, Curv…</text>
+          <line x1="282" y1="45" x2="298" y2="45" stroke="#2a2d3e" stroke-width="1.5"/>
+          <rect x="300" y="22" width="75" height="46" rx="6" fill="#f7c56a20" stroke="#f7c56a" stroke-width="1.2"/>
+          <text x="337" y="42" fill="#f7c56a" font-weight="600">Texture</text>
+          <text x="337" y="57" fill="#8b8fa8">Substance Painter</text>
+          <line x1="377" y1="45" x2="393" y2="45" stroke="#2a2d3e" stroke-width="1.5"/>
+          <rect x="395" y="22" width="75" height="46" rx="6" fill="#b890f020" stroke="#b890f0" stroke-width="1.2"/>
+          <text x="432" y="42" fill="#b890f0" font-weight="600">Engine</text>
+          <text x="432" y="57" fill="#8b8fa8">Unreal/Unity</text>
+          <line x1="472" y1="45" x2="488" y2="45" stroke="#2a2d3e" stroke-width="1.5"/>
+          <rect x="490" y="32" width="55" height="26" rx="5" fill="#5dd4a430" stroke="#5dd4a4" stroke-width="1"/>
+          <text x="517" y="49" fill="#5dd4a4" font-weight="700">✓ Done</text>
+        </g>
+      </svg>
+    </div>
+    <h2 class="section-label">Key Bake Maps</h2>
+    <ul class="checklist">
+      <li><strong>Normal Map</strong> — Encodes surface direction. Fakes high-poly geometry on a low-poly mesh.</li>
+      <li><strong>Ambient Occlusion (AO)</strong> — Darkens crevices. Grounds contact shadows in texturing.</li>
+      <li><strong>Curvature</strong> — Bright on convex edges, dark on concave. Drives edge wear generators.</li>
+      <li><strong>Thickness</strong> — Used for subsurface scattering on organic materials (skin, leaves).</li>
+      <li><strong>Position / World Normal</strong> — Used for gradient-based masking and directional dirt/weathering.</li>
+    </ul>
+    <div class="warn-box"><strong>Hard/soft edge rule:</strong> Harden all UV seam edges before baking. Keep all non-seam edges smooth. This prevents the most common baking artifacts in a single step.</div>`
+  },
+
+  // 6 — GAME ENGINE
+  {
+    nav: 'Game Engine',
+    icon: '🎮',
+    html: `
+    <div class="slide-header">
+      <div class="slide-num">06 — Game Engine</div>
+      <div class="slide-title">Game Engine</div>
+      <div class="slide-subtitle">Getting your asset in-engine and making it look right in real-time.</div>
+    </div>
+    <div class="topic-grid">
+      <div class="topic-card">
+        <h3><span class="topic-icon">📥</span> Importing Assets</h3>
+        <p>Export as FBX or GLTF. Check: Apply all transforms before export. Set correct axis (Y-up for Unity, Z-up for Unreal). Verify scale on import — 1 unit = 1 cm in Unreal, 1 unit = 1 m in Blender.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🔮</span> Material Setup</h3>
+        <p>Wire Albedo → Base Color, Normal → Normal (check Y flip), Roughness + Metallic → their inputs. sRGB: only on Albedo. All other maps = Linear. Wrong colour space is the #1 import mistake.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">⚡</span> Real-time Testing</h3>
+        <p>Test with default lighting and in a dark scene (to catch emissive/self-illumination issues). Look for banding, z-fighting, and pop-in. Test at intended camera distance — what looks fine up close may look blurry from gameplay distance.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">📏</span> Correct Scale</h3>
+        <p>Place a reference human figure next to your asset. If it feels wrong, fix it now — scale issues affect gameplay, physics, and portability to other scenes.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🧱</span> Collision Setup <span class="new-tag">+</span></h3>
+        <p>Every physical asset needs collision. Three types: (1) <strong>Simple</strong> — box, sphere, or convex hull auto-generated — cheap, good for most props. (2) <strong>UCX_ prefix</strong> (Unreal) — custom convex collision mesh modelled by hand, exported with the asset. (3) <strong>Complex/per-poly</strong> — expensive, only for landscape or unique cases. Never use per-poly collision on instanced props.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🎨</span> Vertex Colors <span class="new-tag">+</span></h3>
+        <p>RGB data stored per vertex on the mesh — used in engine for blending between materials, procedural dirt, snow accumulation on top faces, or moss in crevices. No texture cost. Painted in DCC or directly in the engine (Unreal mesh paint tool). Essential for landscape material blending and modular env sets.</p>
+      </div>
+    </div>
+    <div class="diagram">
+      <svg width="560" height="120" viewBox="0 0 560 120">
+        <rect width="560" height="120" rx="12" fill="#1a1d27"/>
+        <text x="280" y="18" text-anchor="middle" fill="#8b8fa8" font-size="11">Scale reference — Unreal Engine (1 unit = 1 cm)</text>
+        <rect x="80" y="35" width="18" height="72" rx="3" fill="#7c6af730" stroke="#7c6af7" stroke-width="1.5"/>
+        <text x="89" y="30" text-anchor="middle" fill="#7c6af7" font-size="10">Human</text>
+        <text x="89" y="115" text-anchor="middle" fill="#8b8fa8" font-size="10">180 cm</text>
+        <rect x="130" y="25" width="30" height="82" rx="3" fill="#f7956a20" stroke="#f7956a" stroke-width="1.5"/>
+        <text x="145" y="20" text-anchor="middle" fill="#f7956a" font-size="10">Door</text>
+        <text x="145" y="115" text-anchor="middle" fill="#8b8fa8" font-size="10">210 cm</text>
+        <rect x="190" y="67" width="40" height="40" rx="3" fill="#5dd4a420" stroke="#5dd4a4" stroke-width="1.5"/>
+        <text x="210" y="62" text-anchor="middle" fill="#5dd4a4" font-size="10">Crate</text>
+        <text x="210" y="115" text-anchor="middle" fill="#8b8fa8" font-size="10">40×40 cm</text>
+        <rect x="260" y="55" width="80" height="8" rx="2" fill="#f7c56a30" stroke="#f7c56a" stroke-width="1.5"/>
+        <rect x="264" y="63" width="6" height="44" rx="1" fill="#f7c56a30" stroke="#f7c56a" stroke-width="1"/>
+        <rect x="330" y="63" width="6" height="44" rx="1" fill="#f7c56a30" stroke="#f7c56a" stroke-width="1"/>
+        <text x="300" y="50" text-anchor="middle" fill="#f7c56a" font-size="10">Table</text>
+        <text x="300" y="115" text-anchor="middle" fill="#8b8fa8" font-size="10">75 cm tall</text>
+        <rect x="370" y="80" width="130" height="27" rx="4" fill="#b890f030" stroke="#b890f0" stroke-width="1.5"/>
+        <rect x="390" y="60" width="90" height="22" rx="6" fill="#b890f020" stroke="#b890f0" stroke-width="1"/>
+        <text x="435" y="55" text-anchor="middle" fill="#b890f0" font-size="10">Car</text>
+        <text x="435" y="115" text-anchor="middle" fill="#8b8fa8" font-size="10">150 cm tall</text>
+      </svg>
+    </div>
+    <div class="tip-box"><strong>Pivot point reminder:</strong> A door's pivot = hinge edge. A crate's pivot = bottom centre. A modular wall = bottom-left corner for grid snap. Check pivots before export — wrong pivots cause rotation/placement issues in engine that can't be fixed without reimporting.</div>
+    <div class="warn-box"><strong>sRGB vs Linear:</strong> Importing a normal map as sRGB produces completely wrong shading. In Unreal, set Compression = Normalmap. In Unity, uncheck sRGB on all non-color maps.</div>`
+  },
+
+  // 7 — OPTIMIZATION
+  {
+    nav: 'Optimization',
+    icon: '⚡',
+    html: `
+    <div class="slide-header">
+      <div class="slide-num">07 — Optimization</div>
+      <div class="slide-title">Optimization</div>
+      <div class="slide-subtitle">Performance is a design constraint, not an afterthought.</div>
+    </div>
+    <h2 class="section-label">Polycount Guidelines (examples)</h2>
+    <div class="score-scale">
+      <div class="score-item"><div class="score-num" style="color:#5dd4a4">500</div><div class="score-label">Background prop<br>(rock, box)</div></div>
+      <div class="score-item"><div class="score-num" style="color:#f7c56a">2K–5K</div><div class="score-label">Mid-range prop<br>(furniture, weapon)</div></div>
+      <div class="score-item"><div class="score-num" style="color:#f7956a">10–20K</div><div class="score-label">Hero prop<br>(vehicle, chest)</div></div>
+      <div class="score-item"><div class="score-num" style="color:#f76a6a">50–80K</div><div class="score-label">Main character<br>(current gen)</div></div>
+    </div>
+    <h2 class="section-label">Key Optimization Strategies</h2>
+    <div class="topic-grid">
+      <div class="topic-card">
+        <h3><span class="topic-icon">🔺</span> Polycount Awareness</h3>
+        <p>Only add geometry that changes the silhouette or can't be faked by a normal map. Cylindrical objects: 8–16 sides for background, 24–32 for hero. Bevel edges only where needed.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🖼️</span> Texture Optimization</h3>
+        <p>Texture atlasing combines multiple objects onto one texture sheet, saving draw calls. Use power-of-2 resolutions. ORM packing: Roughness/Metallic/AO into RGB channels of one texture.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">📊</span> LOD & Culling</h3>
+        <p>LOD (Level of Detail): 3–4 levels, each ~50% of previous polycount. Culling: mark small objects as "cull aggressively". Instancing: repeat props share the same mesh + material.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">📡</span> Draw Calls & Batching <span class="new-tag">+</span></h3>
+        <p>A draw call is one command to the GPU to render a mesh. Every unique mesh+material combination = one draw call. 1000 instances of the same mesh = still one draw call (GPU instancing). One merged 100K-poly object with unique materials can cost more than 50 separate instanced props. Reducing draw calls (via instancing, atlasing, batching) is often more impactful than reducing polycount.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">📱</span> Platform Budgets <span class="new-tag">+</span></h3>
+        <p>Budgets vary wildly by platform: Mobile = 50–100K tris on screen, 512px textures. Console (current gen) = 1–2M tris on screen, 4K textures. PC high-end = effectively unlimited with LODs. Always know your target platform before starting — a mobile-ready prop needs fundamental structural decisions made upfront, not as an afterthought.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">⚠️</span> Triangles vs Vertices <span class="new-tag">+</span></h3>
+        <p>Engines count vertices, not triangles. A triangle with a UV seam or smoothing group break requires duplicate vertices at that edge — a 100-tri mesh with many seams can have 400 vertices. This is what the GPU actually processes. High vertex counts from excessive UV seams or smoothing splits can hurt performance more than expected from the triangle count alone.</p>
+      </div>
+    </div>
+    <div class="diagram">
+      <svg width="560" height="100" viewBox="0 0 560 100">
+        <rect width="560" height="100" rx="12" fill="#1a1d27"/>
+        <text x="280" y="18" text-anchor="middle" fill="#8b8fa8" font-size="11">LOD Chain</text>
+        <polygon points="60,80 40,30 80,30" fill="#7c6af730" stroke="#7c6af7" stroke-width="1.5"/>
+        <line x1="50" y1="55" x2="70" y2="55" stroke="#7c6af7" stroke-width="1"/>
+        <line x1="60" y1="30" x2="60" y2="80" stroke="#7c6af7" stroke-width="1"/>
+        <line x1="40" y1="55" x2="80" y2="55" stroke="#7c6af7" stroke-width="1"/>
+        <text x="60" y="95" text-anchor="middle" fill="#7c6af7" font-size="10">LOD 0 — 100%</text>
+        <polygon points="180,80 155,30 205,30" fill="#f7956a30" stroke="#f7956a" stroke-width="1.5"/>
+        <line x1="155" y1="55" x2="205" y2="55" stroke="#f7956a" stroke-width="1"/>
+        <text x="180" y="95" text-anchor="middle" fill="#f7956a" font-size="10">LOD 1 — 50%</text>
+        <polygon points="300,80 282,30 318,30" fill="#f7c56a30" stroke="#f7c56a" stroke-width="1.5"/>
+        <text x="300" y="95" text-anchor="middle" fill="#f7c56a" font-size="10">LOD 2 — 25%</text>
+        <polygon points="400,80 390,30 410,30" fill="#5dd4a430" stroke="#5dd4a4" stroke-width="1.5"/>
+        <text x="400" y="95" text-anchor="middle" fill="#5dd4a4" font-size="10">LOD 3 — 10%</text>
+        <rect x="470" y="30" width="20" height="50" fill="#8b8fa830" stroke="#8b8fa8" stroke-width="1.5"/>
+        <text x="480" y="95" text-anchor="middle" fill="#8b8fa8" font-size="10">Billboard</text>
+        <line x1="100" y1="55" x2="135" y2="55" stroke="#3a3d5e" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <line x1="225" y1="55" x2="260" y2="55" stroke="#3a3d5e" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <line x1="330" y1="55" x2="368" y2="55" stroke="#3a3d5e" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <line x1="425" y1="55" x2="458" y2="55" stroke="#3a3d5e" stroke-width="1.5" stroke-dasharray="3,2"/>
+      </svg>
+    </div>
+    <div class="tip-box"><strong>ORM packing:</strong> Combine Occlusion (R), Roughness (G), Metallic (B) into one texture. Saves two texture samples per material. Significant savings across an entire scene.</div>`
+  },
+
+  // 8 — PRESENTATION
+  {
+    nav: 'Presentation',
+    icon: '🖼️',
+    html: `
+    <div class="slide-header">
+      <div class="slide-num">08 — Presentation</div>
+      <div class="slide-title">Presentation</div>
+      <div class="slide-subtitle">How you present your work is part of the work.</div>
+    </div>
+    <div class="two-col-3">
+      <div class="topic-card">
+        <h3><span class="topic-icon">💡</span> Lighting</h3>
+        <p>3-point setup: key light (main, directional), fill light (softer, opposite side), rim light (separates from background). HDRI for environment context. Flat uniform lighting hides everything good about your work.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">📷</span> Rendering</h3>
+        <p>Marmoset Toolbag is the industry standard for real-time portfolio renders. Use depth of field subtly. Export at 2x–4x resolution. Include multiple angles: front, 3/4, back, and a hero close-up detail shot.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🎯</span> Composition</h3>
+        <p>Place the hero element at a rule-of-thirds intersection. Background should complement, not compete. For turntables, set the start frame to your best angle. Dark gradient or matching environment backgrounds work best.</p>
+      </div>
+    </div>
+    <div class="diagram">
+      <svg width="560" height="160" viewBox="0 0 560 160">
+        <rect width="560" height="160" rx="12" fill="#1a1d27"/>
+        <text x="280" y="20" text-anchor="middle" fill="#8b8fa8" font-size="11">3-Point Lighting Setup (top view)</text>
+        <circle cx="280" cy="95" r="22" fill="#2a2d3e" stroke="#3a3d5e" stroke-width="1.5"/>
+        <text x="280" y="99" text-anchor="middle" fill="#8b8fa8" font-size="10">asset</text>
+        <circle cx="160" cy="55" r="12" fill="#f7c56a40" stroke="#f7c56a" stroke-width="1.5"/>
+        <text x="160" y="42" text-anchor="middle" fill="#f7c56a" font-size="10" font-weight="600">Key</text>
+        <line x1="172" y1="63" x2="260" y2="86" stroke="#f7c56a" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <circle cx="400" cy="55" r="10" fill="#7c6af720" stroke="#7c6af7" stroke-width="1.5"/>
+        <text x="400" y="42" text-anchor="middle" fill="#7c6af7" font-size="10" font-weight="600">Fill</text>
+        <line x1="390" y1="63" x2="300" y2="86" stroke="#7c6af7" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <circle cx="280" cy="148" r="9" fill="#5dd4a420" stroke="#5dd4a4" stroke-width="1.5"/>
+        <text x="340" y="152" text-anchor="middle" fill="#5dd4a4" font-size="10" font-weight="600">Rim</text>
+        <line x1="280" y1="139" x2="280" y2="117" stroke="#5dd4a4" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <text x="148" y="78" text-anchor="middle" fill="#f7c56a" font-size="9">100% intensity</text>
+        <text x="412" y="78" text-anchor="middle" fill="#7c6af7" font-size="9">30–50%</text>
+        <text x="222" y="148" text-anchor="end" fill="#5dd4a4" font-size="9">10–20%</text>
+      </svg>
+    </div>
+    <h2 class="section-label">ArtStation Breakdown Post Structure <span class="new-tag">+</span></h2>
+    <div class="topic-grid">
+      <div class="topic-card">
+        <h3><span class="topic-icon">1️⃣</span> Hero Renders</h3>
+        <p>2–3 beauty shots from your best angles. 3/4 view, front orthographic, and one dramatic cinematic angle. This is what stops the scroll.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">2️⃣</span> Wireframe Overlay</h3>
+        <p>Beauty render with wireframe overlaid at low opacity. Shows your topology decisions. Include both the low-poly and — if relevant — the high-poly side by side.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">3️⃣</span> Texture Sheet</h3>
+        <p>All PBR maps displayed individually: Albedo, Roughness, Metallic, Normal (and AO, Height if relevant). Shows understanding of every channel. One flat grid image.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">4️⃣</span> Clay / Bake Render</h3>
+        <p>A grey-lit matcap render showing only the baked detail — no colour, no roughness. Isolates the quality of your bake and high-poly work from the texturing.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">5️⃣</span> In-Engine Screenshot <span class="new-tag">+</span></h3>
+        <p>A screenshot from Unreal or Unity in a lighting context. Proves the asset works in a real pipeline, not just in Marmoset. Studios care deeply about this.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">6️⃣</span> Video / GIF Turntable <span class="new-tag">+</span></h3>
+        <p>A 5–10 second smooth 360° turntable render in Marmoset. ArtStation supports embedded video and GIF. Motion reveals surface detail that static images miss. Many studios now expect this as standard. Export at 60fps, 1080p minimum.</p>
+      </div>
+    </div>
+    <div class="tip-box"><strong>Post-processing:</strong> A subtle colour grade (slight contrast, mild vignette, sharpening) makes renders pop. Don't overdo it — the asset should be the hero, not the grade. Marmoset has built-in post-processing controls.</div>
+    <div class="warn-box"><strong>Avoid:</strong> Pure black backgrounds on dark assets. Pure white on light assets. The background creates contrast — if the asset blends in, the presentation fails.</div>`
+  },
+
+  // 9 — PORTFOLIO QUALITY
+  {
+    nav: 'Portfolio Quality',
+    icon: '💼',
+    html: `
+    <div class="slide-header">
+      <div class="slide-num">09 — Portfolio Quality</div>
+      <div class="slide-title">Portfolio Quality</div>
+      <div class="slide-subtitle">Your portfolio is your argument for why someone should hire you.</div>
+    </div>
+    <div class="topic-grid">
+      <div class="topic-card">
+        <h3><span class="topic-icon">🎯</span> Clear Direction</h3>
+        <p>Specialise. "Environment artist with a focus on post-apocalyptic interiors" is more hireable than "I do everything". Recruiters should understand what you're best at after 10 seconds on your page.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">⭐</span> Strong Projects</h3>
+        <p>3 exceptional projects beat 10 mediocre ones. Quality over quantity — always. Lead with your best work. Your first visible project determines whether they keep scrolling.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">📋</span> Breakdowns</h3>
+        <p>Show your process: wireframes, texture maps, bake maps, WIP shots. Hiring artists want to see pipeline understanding, not just a lucky final render.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🏢</span> Tailoring to Studio & Role <span class="new-tag">+</span></h3>
+        <p>Applying to Riot Games (stylized, high polish), Ubisoft (realistic environments), or a mobile studio (optimized, simple) requires different portfolio content. Research the studio's shipped titles. Match their art style, polycount range, and subject matter. Generic portfolios get ignored. A tailored one shows you've done your homework.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🤝</span> Networking <span class="new-tag">+</span></h3>
+        <p>Most game art jobs are filled through networks before they're posted publicly. Join Discord servers (Polycount, 80 Level, studio-specific). Post WIPs and ask for feedback — visibility matters. Follow and engage with senior artists at studios you want to work at. Attend GDC, local game dev meetups, or online portfolio reviews. A warm referral from someone inside the studio is the single most effective job application.</p>
+      </div>
+    </div>
+    <h2 class="section-label">Portfolio Platforms</h2>
+    <ul class="checklist">
+      <li><strong>ArtStation</strong> — Industry standard. Every recruiter uses it. Non-negotiable to have an active account.</li>
+      <li><strong>Sketchfab</strong> — Embed interactive 3D viewers. Great for showing topology and detail interactively.</li>
+      <li><strong>Personal site / Cargo / Squarespace</strong> — Optional but shows extra effort and professionalism.</li>
+      <li><strong>LinkedIn</strong> — For studio visibility and networking, not for displaying work directly.</li>
+      <li><strong>Twitter / X, Instagram, Bluesky</strong> — Post WIPs regularly. Community visibility builds slowly but compounds. Tag studios and senior artists. <span class="new-tag">+</span></li>
+    </ul>
+    <div class="tip-box"><strong>The 10-second test:</strong> Show your portfolio to someone who doesn't know it. After 10 seconds, ask: "What do I specialise in?" If they can't answer, your direction isn't clear enough.</div>
+    <div class="warn-box"><strong>Don't include:</strong> Unfinished work, tutorial copies without attribution, work from 3+ years ago that no longer represents your level, or too many small props with no hero pieces.</div>`
+  },
+
+  // 10 — DESIGN THINKING
+  {
+    nav: 'Design Thinking',
+    icon: '🧠',
+    html: `
+    <div class="slide-header">
+      <div class="slide-num">10 — Design Thinking</div>
+      <div class="slide-title">Design Thinking</div>
+      <div class="slide-subtitle">Making intentional visual decisions — not just executing technique.</div>
+    </div>
+    <div class="topic-grid">
+      <div class="topic-card">
+        <h3><span class="topic-icon">🔷</span> Shape Language</h3>
+        <p>Shapes communicate emotion. Circles/curves = friendly, organic. Sharp triangles = danger, aggression. Rectangles = stability, industrial. Consistent shape language makes an asset read as belonging to a world.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🔍</span> Detail Hierarchy</h3>
+        <p>Not all surfaces deserve equal detail. The focal area gets the most complexity. Surrounding areas get mid detail. Background surfaces stay minimal. Violating this makes everything fight for attention and nothing wins.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">👁️</span> Focal Points</h3>
+        <p>Guide the viewer's eye with contrast (light vs dark), edge sharpness, and value grouping. A good asset has one clear "hero" area the eye naturally lands on first.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">⬛</span> Silhouette Readability <span class="new-tag">+</span></h3>
+        <p>The classic game art test: render your asset as a solid black silhouette on white. If you can't identify what it is or it looks boring, the primary form needs work. Strong silhouettes have distinct breakup — not a blob, not symmetric repetition. Historically, game characters were designed silhouette-first because gameplay required instant recognition at low resolution.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🎨</span> Color Theory Basics <span class="new-tag">+</span></h3>
+        <p>Value grouping: cluster your lights and darks into 2–3 groups, not scattered noise. Temperature contrast: warm key light + cool fill creates depth. Complementary accents (orange highlight on blue metal) create visual pop without clashing. In 3D, color theory mostly lives in roughness variation and the lighting setup, not the albedo map.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">📖</span> Visual Storytelling Through Materials <span class="new-tag">+</span></h3>
+        <p>Material choices communicate history. Worn leather grip on a sword → well-used. Pristine chrome on a weapon → never fired. Rust only on the bottom half of a barrel → it sat in water. Ask: who owns this? How long have they had it? How do they use it? What environment does it live in? The answers should be readable in your texture map.</p>
+      </div>
+    </div>
+    <div class="diagram">
+      <svg width="560" height="140" viewBox="0 0 560 140">
+        <rect width="560" height="140" rx="12" fill="#1a1d27"/>
+        <text x="280" y="18" text-anchor="middle" fill="#8b8fa8" font-size="11">Shape Language & Silhouette Test</text>
+        <text x="93" y="38" text-anchor="middle" fill="#5dd4a4" font-size="11" font-weight="600">Organic / Friendly</text>
+        <ellipse cx="70" cy="85" rx="28" ry="22" fill="#5dd4a420" stroke="#5dd4a4" stroke-width="1.5"/>
+        <ellipse cx="115" cy="90" rx="18" ry="18" fill="#5dd4a420" stroke="#5dd4a4" stroke-width="1.5"/>
+        <ellipse cx="93" cy="72" rx="14" ry="12" fill="#5dd4a420" stroke="#5dd4a4" stroke-width="1.5"/>
+        <text x="93" y="125" text-anchor="middle" fill="#5dd4a4" font-size="10">curves, circles</text>
+        <text x="280" y="38" text-anchor="middle" fill="#f76a6a" font-size="11" font-weight="600">Sharp / Dangerous</text>
+        <polygon points="280,55 250,110 310,110" fill="#f76a6a20" stroke="#f76a6a" stroke-width="1.5"/>
+        <polygon points="265,75 248,110 282,110" fill="#f76a6a20" stroke="#f76a6a" stroke-width="1"/>
+        <polygon points="297,78 315,55 315,110" fill="#f76a6a10" stroke="#f76a6a" stroke-width="1"/>
+        <text x="280" y="125" text-anchor="middle" fill="#f76a6a" font-size="10">triangles, spikes</text>
+        <text x="460" y="38" text-anchor="middle" fill="#f7c56a" font-size="11" font-weight="600">Stable / Industrial</text>
+        <rect x="430" y="58" width="60" height="50" fill="#f7c56a20" stroke="#f7c56a" stroke-width="1.5" rx="2"/>
+        <rect x="440" y="68" width="18" height="30" fill="#f7c56a20" stroke="#f7c56a" stroke-width="1"/>
+        <rect x="462" y="68" width="18" height="30" fill="#f7c56a20" stroke="#f7c56a" stroke-width="1"/>
+        <text x="460" y="125" text-anchor="middle" fill="#f7c56a" font-size="10">rectangles, right angles</text>
+      </svg>
+    </div>
+    <div class="tip-box"><strong>Silhouette test:</strong> Before spending hours on texturing, fill your model with a flat colour in your DCC and check it against a bright background. If it reads clearly from 5 metres, continue. If not, fix the primary form first.</div>
+    <div class="warn-box"><strong>Design before you model:</strong> Gather references, sketch silhouettes, define shape language — before opening any 3D software. 20 minutes of planning saves 3 hours of rework.</div>`
+  },
+
+  // 11 — REFERENCE ANALYSIS
+  {
+    nav: 'Reference Analysis',
+    icon: '🔎',
+    html: `
+    <div class="slide-header">
+      <div class="slide-num">11 — Reference Analysis</div>
+      <div class="slide-title">Reference Analysis</div>
+      <div class="slide-subtitle">The ability to see and translate the real world into 3D.</div>
+    </div>
+    <div class="two-col">
+      <div>
+        <h2 class="section-label">Breaking Down References</h2>
+        <ul class="checklist">
+          <li><strong>Form</strong> — What are the primary volumes? Ignore detail, look at big shapes first.</li>
+          <li><strong>Material</strong> — What is the surface made of? What is the roughness range? How does it reflect light?</li>
+          <li><strong>Construction</strong> — How was this made? Welded? Cast? Carved? Construction history shows up in the surface.</li>
+          <li><strong>Age & Wear</strong> — How old is it? Where has it been handled most? What environmental wear is visible?</li>
+          <li><strong>Scale cues</strong> — What tells you how big this is? Fasteners, grain, human interaction marks?</li>
+          <li><strong>Light source</strong> — Where is the key light in your reference? Understanding the lighting helps you separate surface colour from lighting artefacts. Don't copy the lighting baked into a photo into your albedo. <span class="new-tag">+</span></li>
+        </ul>
+        <h2 class="section-label">Reading Concept Art <span class="new-tag">+</span></h2>
+        <ul class="checklist">
+          <li><strong>2D ≠ photo</strong> — Concept art is an interpretation, not a blueprint. The designer made shortcuts. Your job is to interpret their intent in 3D, not copy every stroke literally.</li>
+          <li><strong>Ask: what material IS this?</strong> — Concept art often uses stylised shading. A grey surface in concept could be painted metal, bare concrete, or rough plastic. Decide, then use photo reference for the actual surface properties.</li>
+          <li><strong>Check for proportion cues</strong> — Concept art may not be to scale. Look for handles, hinges, rivets — real-world objects that tell you the true size.</li>
+          <li><strong>Style vs function</strong> — Understand which elements are design choices (shape, silhouette) and which are functional (hinges, bolts, seams). Model the functional ones with real-world logic, even if the concept is loose.</li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="section-label">Applying References</h2>
+        <ul class="checklist">
+          <li><strong>Don't copy — extract principles</strong> — Old wood reference gives you: roughness range, grain direction, colour variation, crack patterns. Apply those principles to your model.</li>
+          <li><strong>Multiple references</strong> — One for overall form, one for material close-up, one for scale context, one for in-context lighting.</li>
+          <li><strong>Stylised references</strong> — When working stylised, also reference the shipped game's art. Match its conventions, not just reality.</li>
+          <li><strong>Check every 30 minutes</strong> — Looking at your work against reference regularly prevents drift. Without this, after 4 hours you'll have drifted far from your reference without noticing.</li>
+        </ul>
+        <h2 class="section-label">Building a Reference Library <span class="new-tag">+</span></h2>
+        <ul class="checklist">
+          <li><strong>Organise by category</strong> — Materials (wood, metal, concrete, fabric), Subjects (vehicles, architecture, nature), Lighting conditions, Art styles. A well-organised library is immediately usable; a folder called "refs" with 3000 unsorted images is not.</li>
+          <li><strong>Tools</strong> — PureRef (free, industry standard for boards), Eagle.cool (paid, searchable library), dedicated folder structure with preview thumbnails.</li>
+          <li><strong>Collect proactively</strong> — Don't only search for references when starting a project. Build the library continuously — interesting textures on the street, architectural details, machinery at repair shops. The best reference is the one you already have.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="tip-box"><strong>Reference breakdown exercise:</strong> Pick any everyday object. Write: 3 primary shapes, exact material type, roughness estimate (0–1), two visible signs of wear, and where the light is coming from in your reference photo. This trains your eye rapidly.</div>`
+  },
+
+  // 12 — PIPELINE UNDERSTANDING
+  {
+    nav: 'Pipeline',
+    icon: '🔄',
+    html: `
+    <div class="slide-header">
+      <div class="slide-num">12 — Pipeline Understanding</div>
+      <div class="slide-title">Pipeline Understanding</div>
+      <div class="slide-subtitle">Knowing the full journey from concept to playable asset.</div>
+    </div>
+    <div class="diagram">
+      <svg width="560" height="80" viewBox="0 0 560 80">
+        <rect width="560" height="80" rx="12" fill="#1a1d27"/>
+        <g font-size="10" text-anchor="middle">
+          ${[['Concept',60],['Blockout',130],['High-poly',200],['Retopo',270],['UV',330],['Bake',390],['Texture',450],['Engine',520]].map(([label, x], i, arr) => `
+            <rect x="${x-35}" y="20" width="65" height="36" rx="6" fill="#${['7c6af7','f7956a','f76a6a','f7c56a','5dd4a4','7c6af7','f7956a','5dd4a4'][i]}18" stroke="#${['7c6af7','f7956a','f76a6a','f7c56a','5dd4a4','7c6af7','f7956a','5dd4a4'][i]}" stroke-width="1.2"/>
+            <text x="${x}" y="42" fill="#${['7c6af7','f7956a','f76a6a','f7c56a','5dd4a4','7c6af7','f7956a','5dd4a4'][i]}" font-weight="600">${label}</text>
+            ${i < arr.length - 1 ? `<line x1="${x+31}" y1="38" x2="${arr[i+1][1]-36}" y2="38" stroke="#2a2d3e" stroke-width="1.5"/>` : ''}
+          `).join('')}
+        </g>
+      </svg>
+    </div>
+    <div class="two-col">
+      <div>
+        <h2 class="section-label">Full Workflow Knowledge</h2>
+        <ul class="checklist">
+          <li><strong>Understand every step</strong> — Even if you specialise in texturing, you need to understand baking and UVs to do your job well.</li>
+          <li><strong>Handoff checkpoints</strong> — Know what a "finished" low-poly looks like before UVs. Know what a "bake-ready" model looks like. Ambiguity causes rework.</li>
+          <li><strong>Naming conventions</strong> — LOW_AssetName / HIGH_AssetName. Baking software depends on consistent naming to match pairs.</li>
+        </ul>
+        <h2 class="section-label">Team Roles <span class="new-tag">+</span></h2>
+        <ul class="checklist">
+          <li><strong>3D Artist / Prop Artist</strong> — Models, textures, and delivers individual assets to spec.</li>
+          <li><strong>Environment Artist</strong> — Assembles props into levels. Works with modular kits. Focuses on composition and atmosphere.</li>
+          <li><strong>Technical Artist (TA)</strong> — Bridges art and engineering. Builds shaders, tools, and pipeline. Enforces performance budgets. Your best friend when something breaks.</li>
+          <li><strong>Art Lead / Art Director</strong> — Maintains visual consistency. Approves assets, gives notes. Works from an art bible / style guide.</li>
+          <li><strong>Generalist</strong> — Common in smaller studios. Does everything. Breadth over depth.</li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="section-label">Style Guides & Art Bibles <span class="new-tag">+</span></h2>
+        <div class="topic-card">
+          <h3><span class="topic-icon">📖</span> What is an Art Bible?</h3>
+          <p style="margin-bottom:10px">A document (or shared folder) that defines the visual language of the project: colour palette, materials, polycount budgets per asset type, texel density standards, naming conventions, and reference images. Every asset must conform to it.</p>
+          <ul class="checklist" style="margin-top:8px">
+            <li><strong>You will always receive one in a studio job.</strong> Read it before touching anything. Deliver work that matches its standards.</li>
+            <li><strong>For student projects</strong> — create your own mini art bible before you start. Define: max polycount, texture resolution, colour palette, 3 mood reference images. It forces design decisions upfront.</li>
+            <li><strong>Deviation = rework.</strong> If you think something in the style guide is wrong, flag it to the art lead — don't silently break it.</li>
+          </ul>
+        </div>
+        <h2 class="section-label">Debugging <span class="new-tag">+</span></h2>
+        <ul class="checklist">
+          <li><strong>Isolate the step</strong> — If it looks wrong in engine, verify each prior step is correct first.</li>
+          <li><strong>Check transforms</strong> — Un-applied scale/rotation is responsible for the majority of "weird" import bugs.</li>
+          <li><strong>Version control awareness</strong> — Studios use Perforce or Git LFS for 3D assets. Know that these exist. Never save over a file someone else is working on. "Save with new name" before destructive changes.</li>
+        </ul>
+      </div>
+    </div>`
+  },
+
+  // 13 — ORGANIZATION
+  {
+    nav: 'Organization',
+    icon: '📁',
+    html: `
+    <div class="slide-header">
+      <div class="slide-num">13 — Organization</div>
+      <div class="slide-title">Organization</div>
+      <div class="slide-subtitle">A messy project is slow, fragile, and unprofessional.</div>
+    </div>
+    <div class="two-col">
+      <div>
+        <h2 class="section-label">File Structure</h2>
+        <div class="topic-card" style="font-family: monospace; font-size: 13px; color: var(--muted); line-height: 2;">
+          <div style="color:var(--accent)">ProjectName/</div>
+          <div style="padding-left:16px; color:var(--good)">📁 _REF/ <span style="color:var(--muted)">← references</span></div>
+          <div style="padding-left:16px; color:var(--good)">📁 Concept/</div>
+          <div style="padding-left:16px; color:var(--accent2)">📁 3D/</div>
+          <div style="padding-left:32px">📁 Scenes/</div>
+          <div style="padding-left:32px">📁 Export/ <span style="color:var(--muted)">← FBX/OBJ</span></div>
+          <div style="padding-left:16px; color:var(--warn)">📁 Textures/</div>
+          <div style="padding-left:32px">📁 Raw/ <span style="color:var(--muted)">← SPP files</span></div>
+          <div style="padding-left:32px">📁 Export/ <span style="color:var(--muted)">← PNG/TGA</span></div>
+          <div style="padding-left:16px">📁 Renders/</div>
+          <div style="padding-left:16px">📁 Breakdown/</div>
+        </div>
+        <h2 class="section-label">Source Control Basics <span class="new-tag">+</span></h2>
+        <div class="topic-card">
+          <h3><span class="topic-icon">🔀</span> Version Control for Artists</h3>
+          <p style="margin-bottom:10px">Studios use <strong style="color:var(--text)">Perforce</strong> (industry standard for game dev) or <strong style="color:var(--text)">Git LFS</strong> for large binary files. As an artist you need to understand: check out before editing, check in when done, write meaningful changelist descriptions. "Fixed stuff" is not a valid checklist description.</p>
+          <p>Even on solo projects: never save over your only copy. Use _v01, _v02 suffixes or a cloud backup (Google Drive, Dropbox with version history). Treat every save as if someone else might need to roll it back.</p>
+        </div>
+      </div>
+      <div>
+        <h2 class="section-label">Naming Conventions</h2>
+        <ul class="checklist">
+          <li><strong>Asset prefixes:</strong> T_ = Texture · SM_ = Static Mesh · M_ = Material · SKM_ = Skeletal Mesh</li>
+          <li><strong>High/Low poly:</strong> SM_Barrel_LOW / SM_Barrel_HIGH — bakers depend on this suffix</li>
+          <li><strong>Versions:</strong> _v01, _v02 — never "final", "final2", "FINAL_USE_THIS"</li>
+          <li><strong>No spaces:</strong> Use underscores or PascalCase. Spaces break import pipelines.</li>
+          <li><strong>Map types in name:</strong> _Albedo, _N, _ORM, _Emissive</li>
+        </ul>
+        <div class="good-box"><strong>Industry example:</strong><br>SM_WoodenCrate_LOW.fbx<br>T_WoodenCrate_Albedo.png<br>T_WoodenCrate_ORM.png<br>T_WoodenCrate_N.png</div>
+        <h2 class="section-label">Project Handoff Checklist <span class="new-tag">+</span></h2>
+        <ul class="checklist">
+          <li><strong>All transforms applied</strong> — scale, rotation, position zeroed out</li>
+          <li><strong>Pivot at correct position</strong> — base, hinge, snap corner</li>
+          <li><strong>Collision meshes included</strong> — or documented why they're excluded</li>
+          <li><strong>UV Channel 2</strong> — present and non-overlapping (if using static lighting)</li>
+          <li><strong>Textures exported</strong> — correct format, resolution, colour space documented</li>
+          <li><strong>LODs created</strong> — or polycount noted so TA can auto-generate</li>
+          <li><strong>Named correctly</strong> — no spaces, correct prefix, correct map suffixes</li>
+        </ul>
+      </div>
+    </div>`
+  },
+
+  // 14 — PROBLEM SOLVING
+  {
+    nav: 'Problem Solving',
+    icon: '🛠️',
+    html: `
+    <div class="slide-header">
+      <div class="slide-num">14 — Problem Solving</div>
+      <div class="slide-title">Problem Solving</div>
+      <div class="slide-subtitle">Diagnosing and fixing issues systematically — a core professional skill.</div>
+    </div>
+    <div class="two-col">
+      <div class="topic-card">
+        <h3><span class="topic-icon">🔍</span> Identifying Issues</h3>
+        <ul class="checklist" style="margin-top:12px">
+          <li><strong>Describe the symptom precisely</strong> — "The normal map looks wrong" is not useful. "Dark seam artifact on UV island borders in Marmoset" is actionable.</li>
+          <li><strong>Reproduce it consistently</strong> — If you can recreate it from scratch, you can fix it.</li>
+          <li><strong>Isolate the step</strong> — Is it the mesh? UV? Bake settings? Import? Test each step independently.</li>
+          <li><strong>Check the obvious first</strong> — Inverted normals, un-applied scale, wrong colour space, incorrect axis. These cause 80% of "mysterious" issues.</li>
+        </ul>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">🔧</span> Fixing Problems</h3>
+        <ul class="checklist" style="margin-top:12px">
+          <li><strong>Fix at the source</strong> — Don't patch a bad normal map in Photoshop if the real fix is adding a support loop.</li>
+          <li><strong>One change at a time</strong> — Multiple simultaneous changes make it impossible to know what worked.</li>
+          <li><strong>Document solutions</strong> — Keep a personal bug log. You will encounter the same issues repeatedly.</li>
+          <li><strong>Use community resources</strong> — Polycount forums, ArtStation Learning, YouTube. Most problems have been solved before.</li>
+        </ul>
+      </div>
+    </div>
+    <h2 class="section-label">Scoping & Time Management <span class="new-tag">+</span></h2>
+    <div class="two-col">
+      <div class="topic-card">
+        <h3><span class="topic-icon">⏱️</span> Knowing When to Stop</h3>
+        <p style="margin-bottom:12px">"Good enough" is not a failure — it's a professional skill. A finished asset at 90% quality beats a perfect asset at 50% completion. In a studio, missing a deadline is worse than delivering something slightly imperfect that can be iterated on.</p>
+        <p>Signs you're over-polishing: you're adjusting things no one will ever notice, you've looked at it so long you can't see it any more, the time investment is out of proportion to the asset's importance in the scene.</p>
+      </div>
+      <div class="topic-card">
+        <h3><span class="topic-icon">📅</span> Practical Time Budgeting</h3>
+        <ul class="checklist" style="margin-top:8px">
+          <li><strong>Break the task into steps</strong> — Blockout, high-poly, retopo, UV, bake, texture. Estimate each separately.</li>
+          <li><strong>50% rule</strong> — If you're 50% through your time budget and only 30% done, the scope needs cutting. Identify what can be simplified or removed.</li>
+          <li><strong>Revision time is real</strong> — Add 20–30% to any estimate for revisions, iteration, and things going wrong.</li>
+          <li><strong>Communicate early</strong> — If you're going to miss a deadline, say so with 50% of the time remaining — not at the last hour. Early flagging allows the team to adapt.</li>
+        </ul>
+      </div>
+    </div>
+    <h2 class="section-label">Common Problems & Quick Fixes</h2>
+    <div class="score-scale">
+      <div class="score-item" style="text-align:left; min-width:180px">
+        <div style="font-size:12px; color:var(--warn); font-weight:600; margin-bottom:6px">Bake seam artifacts</div>
+        <div style="font-size:12px; color:var(--muted)">→ Harden UV-seam edges on low-poly</div>
+      </div>
+      <div class="score-item" style="text-align:left; min-width:180px">
+        <div style="font-size:12px; color:var(--warn); font-weight:600; margin-bottom:6px">Inverted normals in engine</div>
+        <div style="font-size:12px; color:var(--muted)">→ Check OpenGL vs DirectX Y-flip</div>
+      </div>
+      <div class="score-item" style="text-align:left; min-width:180px">
+        <div style="font-size:12px; color:var(--warn); font-weight:600; margin-bottom:6px">Wrong scale in engine</div>
+        <div style="font-size:12px; color:var(--muted)">→ Apply all transforms, re-export</div>
+      </div>
+      <div class="score-item" style="text-align:left; min-width:180px">
+        <div style="font-size:12px; color:var(--warn); font-weight:600; margin-bottom:6px">Textures look wrong in engine</div>
+        <div style="font-size:12px; color:var(--muted)">→ Check sRGB setting on all maps</div>
+      </div>
+      <div class="score-item" style="text-align:left; min-width:180px">
+        <div style="font-size:12px; color:var(--warn); font-weight:600; margin-bottom:6px">Bake bleeding onto wrong mesh</div>
+        <div style="font-size:12px; color:var(--muted)">→ Use exploded bake or cage</div>
+      </div>
+    </div>`
+  },
+
+  // 15 — SELF-DIRECTED LEARNING
+  {
+    nav: 'Self-Directed Learning',
+    icon: '📚',
+    html: `
+    <div class="slide-header">
+      <div class="slide-num">15 — Self-Directed Learning</div>
+      <div class="slide-title">Self-Directed Learning</div>
+      <div class="slide-subtitle">The most important long-term skill — learning to improve without being told to.</div>
+    </div>
+    <div class="two-col">
+      <div>
+        <h2 class="section-label">Learning Independently</h2>
+        <ul class="checklist">
+          <li><strong>Study shipped games</strong> — Extract and analyse assets: texel density, polycount, UV layouts. Games on PC are free case studies.</li>
+          <li><strong>Follow the industry</strong> — ArtStation, 80 Level, GDC talks on YouTube, Polycount forums.</li>
+          <li><strong>Analyse "making of" breakdowns</strong> — Studios and individual artists post detailed breakdowns. Absorb as many as you can.</li>
+          <li><strong>Timed exercises</strong> — Speed modelling, timed texturing sessions. Forces decision-making and breaks perfectionism loops.</li>
+        </ul>
+        <h2 class="section-label">Improving Without Tutorials</h2>
+        <ul class="checklist">
+          <li><strong>Personal projects</strong> — Design a brief yourself, execute it fully. Forces all skills together.</li>
+          <li><strong>Art challenges</strong> — Weekly challenges, game jams, ArtStation challenges. Deadlines create growth.</li>
+          <li><strong>Critique seeking</strong> — Post WIPs, ask for specific feedback. "Does this look good?" is weak. "Does the roughness on the metal panel read correctly?" is useful.</li>
+        </ul>
+        <h2 class="section-label">Critical Self-Evaluation <span class="new-tag">+</span></h2>
+        <ul class="checklist">
+          <li><strong>The thumbnail test</strong> — Shrink your render to a 200px thumbnail. Can you still read the forms, material, and focal point? If not, the large-scale read is weak.</li>
+          <li><strong>The flip test</strong> — Horizontally mirror your render. Your brain stops auto-correcting familiar errors and sees the image fresh. Composition flaws become obvious.</li>
+          <li><strong>Compare at the same size</strong> — Place your work next to a professional ArtStation piece at the same pixel size. Don't compare your full-res to their thumbnail. Honest comparison reveals real gaps.</li>
+          <li><strong>Separate "I made it" from "it's good"</strong> — Attachment to your own work is natural but dangerous. The question is not "did I work hard on this?" — it is "does this communicate what it needs to, at the quality it needs to?" These are different questions.</li>
+          <li><strong>Time-gap review</strong> — Come back to your work after 24 hours away. You'll see different things. A fresh eye is worth more than one more hour of staring at it.</li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="section-label">Self-Assessment Loop</h2>
+        <div class="diagram" style="margin-top:0">
+          <svg width="260" height="260" viewBox="0 0 260 260">
+            <rect width="260" height="260" rx="12" fill="#1a1d27"/>
+            <circle cx="130" cy="130" r="90" fill="none" stroke="#2a2d3e" stroke-width="1" stroke-dasharray="4,3"/>
+            <circle cx="130" cy="42" r="28" fill="#7c6af720" stroke="#7c6af7" stroke-width="1.5"/>
+            <text x="130" y="38" text-anchor="middle" fill="#7c6af7" font-size="10" font-weight="600">Assess</text>
+            <text x="130" y="52" text-anchor="middle" fill="#7c6af7" font-size="9">where am I?</text>
+            <circle cx="212" cy="170" r="28" fill="#f7956a20" stroke="#f7956a" stroke-width="1.5"/>
+            <text x="212" y="166" text-anchor="middle" fill="#f7956a" font-size="10" font-weight="600">Plan</text>
+            <text x="212" y="180" text-anchor="middle" fill="#f7956a" font-size="9">what to do?</text>
+            <circle cx="55" cy="170" r="28" fill="#5dd4a420" stroke="#5dd4a4" stroke-width="1.5"/>
+            <text x="55" y="166" text-anchor="middle" fill="#5dd4a4" font-size="10" font-weight="600">Execute</text>
+            <text x="55" y="180" text-anchor="middle" fill="#5dd4a4" font-size="9">make the work</text>
+            <path d="M155 55 Q195 80 195 145" fill="none" stroke="#f7956a" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#a2)"/>
+            <path d="M185 193 Q130 230 80 195" fill="none" stroke="#5dd4a4" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#a3)"/>
+            <path d="M42 145 Q30 80 105 55" fill="none" stroke="#7c6af7" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#a1)"/>
+            <defs>
+              <marker id="a1" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#7c6af7"/></marker>
+              <marker id="a2" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#f7956a"/></marker>
+              <marker id="a3" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#5dd4a4"/></marker>
+            </defs>
+          </svg>
+        </div>
+        <div class="tip-box" style="margin-top:16px"><strong>Monthly habit:</strong> Score yourself on this worksheet. Compare to last month. Pick your single lowest score and make it the explicit focus of your next personal project. Growth is fastest when it's intentional.</div>
+        <div class="good-box"><strong>Mentorship:</strong> Both directions matter. Find someone a few years ahead of you and study their work deeply. Also teach what you know — explaining a concept forces you to understand it more precisely than just using it.</div>
+      </div>
+    </div>`
+  }
+];
+
+// Build sidebar nav
+const sidebar = document.getElementById('sidebar');
+slides.forEach((s, i) => {
+  const el = document.createElement('div');
+  el.className = 'nav-item' + (i === 0 ? ' active' : '');
+  el.innerHTML = `<span class="nav-num">${i === 0 ? '⌂' : i}</span>${s.nav}`;
+  el.onclick = () => goTo(i);
+  sidebar.appendChild(el);
+});
+
+// Build slide content
+const content = document.getElementById('content');
+slides.forEach((s, i) => {
+  const el = document.createElement('div');
+  el.className = 'slide' + (i === 0 ? ' active' : '');
+  el.id = 'slide-' + i;
+  el.innerHTML = s.html;
+  content.appendChild(el);
+});
+
+let current = 0;
+
+function goTo(index) {
+  if (index < 0 || index >= slides.length) return;
+  document.querySelectorAll('.slide')[current].classList.remove('active');
+  document.querySelectorAll('.nav-item')[current].classList.remove('active');
+  current = index;
+  document.querySelectorAll('.slide')[current].classList.add('active');
+  document.querySelectorAll('.nav-item')[current].classList.add('active');
+  document.querySelectorAll('.nav-item')[current].scrollIntoView({ block: 'nearest' });
+  document.getElementById('slide-counter').textContent = `${current + 1} / ${slides.length}`;
+  document.getElementById('progress-bar').style.width = `${((current + 1) / slides.length) * 100}%`;
+  document.getElementById('btn-prev').disabled = current === 0;
+  document.getElementById('btn-next').disabled = current === slides.length - 1;
+}
+
+function navigate(dir) { goTo(current + dir); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navigate(1);
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') navigate(-1);
+});
+
+goTo(0);
+</script>
+</body>
+</html>
